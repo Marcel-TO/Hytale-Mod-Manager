@@ -1,5 +1,9 @@
 # Justfile for the Hytale Mod Publisher application
 
-# Runs the application
-run:
-    go run main.go
+# Publishes the mod
+publish:
+    go run main.go publish
+
+# Builds and publishes the mod
+build-and-publish:
+    go run main.go publish --build

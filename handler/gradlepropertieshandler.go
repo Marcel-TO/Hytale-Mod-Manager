@@ -69,3 +69,56 @@ func ReadGradleProperties(filePath string, logger logger.Logger) (config.CurseFo
 	displayName := fmt.Sprintf("%s-%s+%s", mod_name, version, hytale_version)
 	return config.NewCurseForgeModMetadata(displayName), nil
 }
+
+func UpdateGradleProperties(filePath string, newGameVersion string, logger logger.Logger) error {
+	data, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer data.Close()
+
+	r := bufio.NewReader(data)
+	var lines []string
+
+	for {
+		line, err := r.ReadString('\n')
+		if err != nil {
+			if err.Error() != "EOF" {
+				return err
+			}
+			if line != "" {
+				lines = append(lines, line)
+			}
+			break
+		}
+		lines = append(lines, line)
+	}
+
+	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmedLine, "hytale_version") {
+			lineParts := strings.SplitN(trimmedLine, "=", 2)
+			if len(lineParts) == 2 {
+				prefix := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+				lines[i] = prefix + "hytale_version=" + newGameVersion + "\n"
+			}
+			break
+		}
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	w := bufio.NewWriter(file)
+	for _, line := range lines {
+		_, err := w.WriteString(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	return w.Flush()
+}
