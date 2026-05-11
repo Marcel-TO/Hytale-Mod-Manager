@@ -1,4 +1,4 @@
-# HytaleModding-Mod-Publisher
+# HytaleModding-mod-manager
 This repository contains a small tool that uploads selected mods to newest versions. The tool is currently in early development and only supports CurseForge, but support for ModTale and other platforms will be added in the future. The tool is written in Go and uses the CurseForge API to upload mods. The tool is designed to be run as a command line application, but a GUI may be added in the future.
 
 ## Prerequisites

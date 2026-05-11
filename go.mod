@@ -1,4 +1,4 @@
-module marcel-to/hytale/mod-publisher
+module marcel-to/hytale/mod-manager
 
 go 1.26.3
 

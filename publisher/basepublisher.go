@@ -1,8 +1,8 @@
 package publisher
 
 import (
-	"marcel-to/hytale/mod-publisher/config"
-	"marcel-to/hytale/mod-publisher/logger"
+	"marcel-to/hytale/mod-manager/config"
+	"marcel-to/hytale/mod-manager/logger"
 )
 
 type BasePublisher struct {

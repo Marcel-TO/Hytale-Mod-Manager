@@ -5,8 +5,11 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"marcel-to/hytale/mod-publisher/logger"
+	"marcel-to/hytale/mod-manager/logger"
 )
+
+// Constants
+const cacheFilePath = "cache/upload_cache.yaml"
 
 type Config struct {
 	CurseForge CurseForgeConfig `yaml:"curseforge"`
@@ -29,6 +32,15 @@ type CurseForgeModMetadata struct {
 	ReleaseType   string `json:"releaseType"`
 }
 
+type UploadCache struct {
+	CurseForgeUploadCache []CurseForgeUploadCache `yaml:"curseforgeUploadCache"`
+}
+
+type CurseForgeUploadCache struct {
+	ProjectID int    `yaml:"projectId"`
+	Version   string `yaml:"version"`
+}
+
 func NewCurseForgeModMetadata(displayName string) CurseForgeModMetadata {
 	return CurseForgeModMetadata{
 		DisplayName:   displayName,
@@ -36,6 +48,54 @@ func NewCurseForgeModMetadata(displayName string) CurseForgeModMetadata {
 		Changelog:     "",
 		ChangelogType: "markdown",
 	}
+}
+
+func (cache *UploadCache) GetUploadCache(logger logger.Logger) *UploadCache {
+	yamlFile, err := os.ReadFile(cacheFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return cache
+		}
+		logger.Error("Failed to read upload cache: " + err.Error())
+		return cache
+	}
+
+	err = yaml.Unmarshal(yamlFile, cache)
+	if err != nil {
+		logger.Error("Failed to parse upload cache: " + err.Error())
+	}
+	return cache
+}
+
+func (cache *UploadCache) SaveUploadCache(logger logger.Logger) {
+	data, err := yaml.Marshal(cache)
+	if err != nil {
+		logger.Error("Failed to serialize upload cache: " + err.Error())
+		return
+	}
+	err = os.WriteFile(cacheFilePath, data, 0644)
+	if err != nil {
+		logger.Error("Failed to write upload cache: " + err.Error())
+	}
+}
+
+func (cache *UploadCache) IsVersionCached(projectID int, version string) bool {
+	for _, entry := range cache.CurseForgeUploadCache {
+		if entry.ProjectID == projectID && entry.Version == version {
+			return true
+		}
+	}
+	return false
+}
+
+func (cache *UploadCache) AddCacheEntry(projectID int, version string) {
+	if cache.IsVersionCached(projectID, version) {
+		return
+	}
+	cache.CurseForgeUploadCache = append(cache.CurseForgeUploadCache, CurseForgeUploadCache{
+		ProjectID: projectID,
+		Version:   version,
+	})
 }
 
 func (config *Config) GetConfig(logger logger.Logger, filePath string) *Config {

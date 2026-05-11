@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"marcel-to/hytale/mod-publisher/config"
-	"marcel-to/hytale/mod-publisher/logger"
+	"marcel-to/hytale/mod-manager/config"
+	"marcel-to/hytale/mod-manager/logger"
 )
 
 // ReadGradleProperties reads the content of a Gradle properties file at the specified filePath and returns it as a CurseForgeModMetadata struct.
