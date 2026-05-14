@@ -31,7 +31,7 @@ func main() {
 		runPublish(log, *doBuild, &cfg)
 	case "update":
 		updateCmd := flag.NewFlagSet("update", flag.ExitOnError)
-		gameVersion := updateCmd.String("game-version", "", "The new game version to set in gradle.properties before building and publishing")
+		gameVersion := updateCmd.String("version", "", "The new game version to set in gradle.properties before building and publishing")
 		updateCmd.Parse(os.Args[2:])
 		runUpdate(log, *gameVersion, &cfg)
 	default:
@@ -82,6 +82,7 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  publish         Publish all configured mods to CurseForge")
+	fmt.Println("  update version  Update the game version and publish all configured mods to CurseForge")
 	fmt.Println()
 	fmt.Println("Options for 'publish':")
 	fmt.Println("  --build         Build each mod jar before publishing")
