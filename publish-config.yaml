@@ -1,8 +1,0 @@
-curseforge:
-  mods:
-    - name: "PortalHome"
-      projectId: 1442209
-      repoLocation: "G:/Github/HytaleModding/_Plugins/PortalHome"
-    - name: "Hawks Quality-Of-Life Improvements"
-      projectId: 1465927
-      repoLocation: "G:/Github/HytaleModding/_Plugins/HytaleModding-HawksQualityImprovements"
