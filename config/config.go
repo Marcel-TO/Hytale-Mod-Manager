@@ -23,6 +23,7 @@ type CurseForgeMod struct {
 	Name         string `yaml:"name"`
 	ProjectID    int    `yaml:"projectId"`
 	RepoLocation string `yaml:"repoLocation"`
+	ReleaseType  string `yaml:"releaseType"`
 }
 
 type CurseForgeModMetadata struct {
@@ -92,6 +93,15 @@ func (cache *UploadCache) AddCacheEntry(projectID int, version string) {
 	if cache.IsVersionCached(projectID, version) {
 		return
 	}
+
+	// Overwrite existing entry for the same project ID if it exists
+	for i, entry := range cache.CurseForgeUploadCache {
+		if entry.ProjectID == projectID {
+			cache.CurseForgeUploadCache = append(cache.CurseForgeUploadCache[:i], cache.CurseForgeUploadCache[i+1:]...)
+			break
+		}
+	}
+
 	cache.CurseForgeUploadCache = append(cache.CurseForgeUploadCache, CurseForgeUploadCache{
 		ProjectID: projectID,
 		Version:   version,

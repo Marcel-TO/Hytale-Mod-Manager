@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-
-	"github.com/joho/godotenv"
 )
 
 type CurseForgePublisher struct {
@@ -63,11 +61,6 @@ func (p *CurseForgePublisher) PublishMod(mod config.CurseForgeMod, metadata conf
 	url := p.url + fmt.Sprintf("%d/upload-file", mod.ProjectID)
 	method := "POST"
 
-	// Load API token from environment variable
-	err := godotenv.Load()
-	if err != nil {
-		return fmt.Errorf("error loading .env file: %w", err)
-	}
 	api_token := os.Getenv("CURSEFORGE_API_TOKEN")
 	if api_token == "" {
 		return fmt.Errorf("it appears CURSEFORGE_API_TOKEN is not set in .env file")

@@ -17,12 +17,12 @@ import (
 func Build(repoLocation string, log logger.Logger) error {
 	if hasJust() && hasJustfile(repoLocation) {
 		log.Info(fmt.Sprintf("Running 'just build' in %s", repoLocation))
-		return run(repoLocation, "just", "build")
+		return Run(repoLocation, "just", "build")
 	}
 
 	gradlew := "./gradlew"
 	log.Info(fmt.Sprintf("'just' not found or no justfile present, running '%s build' in %s", gradlew, repoLocation))
-	return run(repoLocation, gradlew, "build")
+	return Run(repoLocation, gradlew, "build")
 }
 
 func UpdateGameVersion(repoLocation string, gameVersion string, log logger.Logger) error {
@@ -51,8 +51,8 @@ func hasJustfile(repoLocation string) bool {
 	return false
 }
 
-// run executes the given command in the specified directory, streaming its output to stdout and stderr.
-func run(dir string, name string, args ...string) error {
+// Run executes the given command in the specified directory, streaming its output to stdout and stderr.
+func Run(dir string, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout

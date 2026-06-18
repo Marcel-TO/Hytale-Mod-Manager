@@ -11,12 +11,12 @@ It can be configured with a YAML file named `publish-config.yaml`. The configura
 ```yaml
 curseforge:
   mods:
-    - projectId: 123456
-      name: "My Mod"
-      repoLocation: "local/path/to/your/mod/repository"
-    - projectId: 789012
-      name: "Another Mod"
-      repoLocation: "local/path/to/your/other/mod/repository"
+- projectId: 123456
+    name: "My Mod"
+    repoLocation: "local/path/to/your/mod/repository"
+- projectId: 789012
+    name: "Another Mod"
+    repoLocation: "local/path/to/your/other/mod/repository"
 ```
 
 ## Environment Variables
