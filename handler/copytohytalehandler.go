@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func CopyToHytaleHandler(sourcePath, destinationPath, releaseType string) error {
+func CopyToHytaleHandler(sourcePath, destinationPath string) error {
 	modName, version, hytaleVersion, err := ReadRawModProperties(filepath.Join(sourcePath, "gradle.properties"))
 	if err != nil {
 		return fmt.Errorf("failed to read gradle.properties: %w", err)

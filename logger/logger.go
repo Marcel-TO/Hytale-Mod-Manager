@@ -5,6 +5,7 @@ package logger
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -25,47 +26,33 @@ func NewLogger(prefix string, isDebugging bool) *Logger {
 	}
 }
 
-// Info logs an informational message.
-//
-// It adds the current time and the log level "INFO" to the message.
+// Info logs an informational message to stdout.
 func (l *Logger) Info(message string) {
 	msg := l.generateLogMessage(message, "INFO")
 	l.logs = append(l.logs, msg)
-	if l.isDebugging {
-		fmt.Println(msg)
-	}
+	fmt.Println(msg)
 }
 
-// Warning logs a warning message.
-//
-// It adds the current time and the log level "WARNING" to the message.
+// Warning logs a warning message to stderr.
 func (l *Logger) Warning(message string) {
 	msg := l.generateLogMessage(message, "WARNING")
 	l.logs = append(l.logs, msg)
-	if l.isDebugging {
-		fmt.Println(msg)
-	}
+	fmt.Fprintln(os.Stderr, msg)
 }
 
-// Error logs an error message.
-//
-// It adds the current time and the log level "ERROR" to the message.
+// Error logs an error message to stderr.
 func (l *Logger) Error(message string) {
 	msg := l.generateLogMessage(message, "ERROR")
 	l.logs = append(l.logs, msg)
-	if l.isDebugging {
-		fmt.Println(msg)
-	}
+	fmt.Fprintln(os.Stderr, msg)
 }
 
-// Debug logs a debug message.
-//
-// It adds the current time and the log level "DEBUG" to the message.
+// Debug logs a debug message to stderr when debugging is enabled.
 func (l *Logger) Debug(message string) {
 	msg := l.generateLogMessage(message, "DEBUG")
 	l.logs = append(l.logs, msg)
 	if l.isDebugging {
-		fmt.Println(msg)
+		fmt.Fprintln(os.Stderr, msg)
 	}
 }
 

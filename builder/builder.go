@@ -14,7 +14,7 @@ import (
 // Build attempts to build the mod jar in the given repoLocation.
 // It prefers `just build` if the `just` binary is available AND a justfile
 // exists in repoLocation, otherwise falls back to `./gradlew build`
-func Build(repoLocation string, log logger.Logger) error {
+func Build(repoLocation string, log *logger.Logger) error {
 	if hasJust() && hasJustfile(repoLocation) {
 		log.Info(fmt.Sprintf("Running 'just build' in %s", repoLocation))
 		return Run(repoLocation, "just", "build")
@@ -25,8 +25,8 @@ func Build(repoLocation string, log logger.Logger) error {
 	return Run(repoLocation, gradlew, "build")
 }
 
-func UpdateGameVersion(repoLocation string, gameVersion string, log logger.Logger) error {
-	err := handler.UpdateGradleProperties(filepath.Join(repoLocation, "gradle.properties"), gameVersion, log)
+func UpdateGameVersion(repoLocation string, gameVersion string, log *logger.Logger) error {
+	err := handler.UpdateGradleProperties(filepath.Join(repoLocation, "gradle.properties"), gameVersion)
 	if err != nil {
 		return fmt.Errorf("failed to update gradle.properties: %w", err)
 	}

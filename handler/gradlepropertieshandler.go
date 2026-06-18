@@ -2,123 +2,88 @@ package handler
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"marcel-to/hytale/mod-manager/config"
-	"marcel-to/hytale/mod-manager/logger"
 )
 
-// ReadGradleProperties reads the content of a Gradle properties file at the specified filePath and returns it as a CurseForgeModMetadata struct.
-func ReadGradleProperties(filePath string, logger logger.Logger) (config.CurseForgeModMetadata, error) {
-	data, err := os.Open(filePath)
+// ReadGradleProperties reads a gradle.properties file and returns mod metadata.
+// It delegates parsing to ReadRawModProperties.
+func ReadGradleProperties(filePath string) (config.CurseForgeModMetadata, error) {
+	modName, version, hytaleVersion, err := ReadRawModProperties(filePath)
 	if err != nil {
 		return config.CurseForgeModMetadata{}, err
 	}
-
-	defer data.Close()
-
-	r := bufio.NewReader(data)
-
-	mod_name := ""
-	version := ""
-	hytale_version := ""
-
-	for {
-		line, err := r.ReadString('\n')
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			}
-			return config.CurseForgeModMetadata{}, err
-		}
-
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		lineParts := strings.SplitN(line, "=", 2)
-		if len(lineParts) != 2 {
-			continue
-		}
-
-		key := strings.TrimSpace(lineParts[0])
-		value := strings.TrimSpace(lineParts[1])
-
-		switch key {
-		case "mod_name":
-			mod_name = value
-		case "version":
-			version = value
-		case "hytale_version":
-			hytale_version = value
-		}
-
-		// If all required metadata is found, stop reading the file
-		if mod_name != "" && version != "" && hytale_version != "" {
-			break
-		}
-	}
-
-	if mod_name == "" || version == "" || hytale_version == "" {
-		return config.CurseForgeModMetadata{}, fmt.Errorf("missing required metadata in gradle.properties")
-	}
-
-	displayName := fmt.Sprintf("%s-%s+%s", mod_name, version, hytale_version)
+	displayName := fmt.Sprintf("%s-%s+%s", modName, version, hytaleVersion)
 	return config.NewCurseForgeModMetadata(displayName), nil
 }
 
-func UpdateGradleProperties(filePath string, newGameVersion string, logger logger.Logger) error {
-	data, err := os.Open(filePath)
+// UpdateGradleProperties replaces the hytale_version value in a gradle.properties file.
+// It writes atomically via a temp file and rename to prevent data loss on crash.
+func UpdateGradleProperties(filePath string, newGameVersion string) error {
+	f, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
-	defer data.Close()
 
-	r := bufio.NewReader(data)
+	r := bufio.NewReader(f)
 	var lines []string
-
 	for {
 		line, err := r.ReadString('\n')
 		if err != nil {
-			if err.Error() != "EOF" {
-				return err
+			if errors.Is(err, io.EOF) {
+				if line != "" {
+					lines = append(lines, line)
+				}
+				break
 			}
-			if line != "" {
-				lines = append(lines, line)
-			}
-			break
+			f.Close()
+			return err
 		}
 		lines = append(lines, line)
 	}
+	f.Close()
 
 	for i, line := range lines {
-		trimmedLine := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmedLine, "hytale_version") {
-			lineParts := strings.SplitN(trimmedLine, "=", 2)
-			if len(lineParts) == 2 {
-				prefix := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
-				lines[i] = prefix + "hytale_version=" + newGameVersion + "\n"
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "hytale_version") {
+			if parts := strings.SplitN(trimmed, "=", 2); len(parts) == 2 {
+				eqIdx := strings.Index(line, "=")
+				lines[i] = line[:eqIdx+1] + newGameVersion + "\n"
 			}
 			break
 		}
 	}
 
-	file, err := os.Create(filePath)
+	// Write atomically: write to a temp file then rename over the original.
+	tmp, err := os.CreateTemp(filepath.Dir(filePath), ".gradle.properties.*")
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	tmpName := tmp.Name()
 
-	w := bufio.NewWriter(file)
+	w := bufio.NewWriter(tmp)
 	for _, line := range lines {
-		_, err := w.WriteString(line)
-		if err != nil {
+		if _, err := w.WriteString(line); err != nil {
+			tmp.Close()
+			os.Remove(tmpName)
 			return err
 		}
 	}
+	if err := w.Flush(); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
 
-	return w.Flush()
+	return os.Rename(tmpName, filePath)
 }

@@ -41,7 +41,7 @@ func RunUpdate(log *logger.Logger, args config.UpdateArgumentConfig, cfg *config
 	if args.IsPublish {
 		log.Info("Publishing to CurseForge...")
 		log.Info(fmt.Sprintf("Found %d mods to publish to CurseForge", len(cfg.CurseForge.Mods)))
-		curseForgePublisher := publisher.NewCurseForgePublisher(*log, cfg)
+		curseForgePublisher := publisher.NewCurseForgePublisher(log, cfg)
 		curseForgePublisher.Publish()
 	}
 	return nil
@@ -50,7 +50,7 @@ func RunUpdate(log *logger.Logger, args config.UpdateArgumentConfig, cfg *config
 func updateGameVersion(log *logger.Logger, mod config.CurseForgeMod, newVersion string) error {
 	// Update the game version and build the mod
 	log.Info(fmt.Sprintf("Updating game version to %s and building mod [%s]...", newVersion, mod.Name))
-	if err := builder.UpdateGameVersion(mod.RepoLocation, newVersion, *log); err != nil {
+	if err := builder.UpdateGameVersion(mod.RepoLocation, newVersion, log); err != nil {
 		return fmt.Errorf("failed to update and build mod [%s]: %w", mod.Name, err)
 	}
 	log.Info(fmt.Sprintf("Successfully updated and built mod [%s]", mod.Name))
@@ -65,7 +65,7 @@ func copyBuiltJarsToHytale(log *logger.Logger, mod config.CurseForgeMod) error {
 	if hytalePath == "" {
 		return fmt.Errorf("HYTALE_PATH environment variable is not set. Please set it to the root directory of your Hytale installation")
 	}
-	if err := handler.CopyToHytaleHandler(mod.RepoLocation, filepath.Join(hytalePath, "UserData/Mods"), mod.ReleaseType); err != nil {
+	if err := handler.CopyToHytaleHandler(mod.RepoLocation, filepath.Join(hytalePath, "UserData/Mods")); err != nil {
 		return fmt.Errorf("failed to copy mod [%s] to Hytale mods directory: %w", mod.Name, err)
 	}
 	log.Info(fmt.Sprintf("Successfully copied mod [%s] to Hytale mods directory", mod.Name))

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -51,32 +52,32 @@ func NewCurseForgeModMetadata(displayName string) CurseForgeModMetadata {
 	}
 }
 
-func (cache *UploadCache) GetUploadCache(logger logger.Logger) *UploadCache {
+func (cache *UploadCache) GetUploadCache(log *logger.Logger) *UploadCache {
 	yamlFile, err := os.ReadFile(cacheFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return cache
 		}
-		logger.Error("Failed to read upload cache: " + err.Error())
+		log.Error("Failed to read upload cache: " + err.Error())
 		return cache
 	}
 
 	err = yaml.Unmarshal(yamlFile, cache)
 	if err != nil {
-		logger.Error("Failed to parse upload cache: " + err.Error())
+		log.Error("Failed to parse upload cache: " + err.Error())
 	}
 	return cache
 }
 
-func (cache *UploadCache) SaveUploadCache(logger logger.Logger) {
+func (cache *UploadCache) SaveUploadCache(log *logger.Logger) {
 	data, err := yaml.Marshal(cache)
 	if err != nil {
-		logger.Error("Failed to serialize upload cache: " + err.Error())
+		log.Error("Failed to serialize upload cache: " + err.Error())
 		return
 	}
 	err = os.WriteFile(cacheFilePath, data, 0644)
 	if err != nil {
-		logger.Error("Failed to write upload cache: " + err.Error())
+		log.Error("Failed to write upload cache: " + err.Error())
 	}
 }
 
@@ -108,18 +109,17 @@ func (cache *UploadCache) AddCacheEntry(projectID int, version string) {
 	})
 }
 
-func (config *Config) GetConfig(logger logger.Logger, filePath string) *Config {
+// LoadConfig reads and parses the YAML configuration file at filePath.
+func LoadConfig(filePath string) (*Config, error) {
 	yamlFile, err := os.ReadFile(filePath)
 	if err != nil {
-		logger.Error("Failed to read config.yaml: " + err.Error())
-		return nil
+		return nil, fmt.Errorf("failed to read %s: %w", filePath, err)
 	}
 
-	err = yaml.Unmarshal(yamlFile, config)
-	if err != nil {
-		logger.Error("Failed to parse config.yaml: " + err.Error())
-		return nil
+	var cfg Config
+	if err = yaml.Unmarshal(yamlFile, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", filePath, err)
 	}
 
-	return config
+	return &cfg, nil
 }

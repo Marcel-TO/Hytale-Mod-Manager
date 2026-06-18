@@ -22,15 +22,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg := config.Config{}
-	cfg.GetConfig(*log, "publish-config.yaml")
+	cfg, err := config.LoadConfig("publish-config.yaml")
+	if err != nil {
+		log.Error("Failed to load configuration: " + err.Error())
+		os.Exit(1)
+	}
 	log.Info("Configuration loaded successfully!")
 
-	// Load API token from environment variable
-	err := godotenv.Load()
-	if err != nil {
-		log.Error(fmt.Sprintf("error loading .env file: %v", err))
-		os.Exit(1)
+	// Load API token from .env file; .env is optional — env vars may be set by the runtime.
+	if err := godotenv.Load(); err != nil {
+		log.Warning(fmt.Sprintf(".env file not loaded: %v", err))
 	}
 
 	switch os.Args[1] {
@@ -38,11 +39,17 @@ func main() {
 		publishCmd := flag.NewFlagSet("publish", flag.ExitOnError)
 		doBuild := publishCmd.Bool("build", false, "Build each mod jar before publishing")
 		publishCmd.Parse(os.Args[2:])
-		runPublish(log, *doBuild, &cfg)
+		if err := runPublish(log, *doBuild, cfg); err != nil {
+			log.Error(err.Error())
+			os.Exit(1)
+		}
 	case "update":
 		updateCmd := flag.NewFlagSet("update", flag.ExitOnError)
 		args := config.ParseUpdateArguments(updateCmd, os.Args[2:])
-		operations.RunUpdate(log, args, &cfg)
+		if err := operations.RunUpdate(log, args, cfg); err != nil {
+			log.Error(err.Error())
+			os.Exit(1)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
 		printUsage()
@@ -50,14 +57,13 @@ func main() {
 	}
 }
 
-func runPublish(log *logger.Logger, doBuild bool, cfg *config.Config) {
+func runPublish(log *logger.Logger, doBuild bool, cfg *config.Config) error {
 	if doBuild {
 		log.Info("Building mods before publishing...")
 		for _, mod := range cfg.CurseForge.Mods {
 			log.Info(fmt.Sprintf("Building mod [%s]...", mod.Name))
-			if err := builder.Build(mod.RepoLocation, *log); err != nil {
-				log.Error(fmt.Sprintf("Failed to build mod [%s]: %v", mod.Name, err))
-				os.Exit(1)
+			if err := builder.Build(mod.RepoLocation, log); err != nil {
+				return fmt.Errorf("failed to build mod [%s]: %w", mod.Name, err)
 			}
 			log.Info(fmt.Sprintf("Successfully built mod [%s]", mod.Name))
 		}
@@ -65,18 +71,19 @@ func runPublish(log *logger.Logger, doBuild bool, cfg *config.Config) {
 
 	log.Info("Publishing to CurseForge...")
 	log.Info(fmt.Sprintf("Found %d mods to publish to CurseForge", len(cfg.CurseForge.Mods)))
-	curseForgePublisher := publisher.NewCurseForgePublisher(*log, cfg)
+	curseForgePublisher := publisher.NewCurseForgePublisher(log, cfg)
 	curseForgePublisher.Publish()
+	return nil
 }
 
 func printUsage() {
-	fmt.Println("Usage: mod-manager <command> [options]")
-	fmt.Println()
-	fmt.Println("Commands:")
-	fmt.Println("  publish         Publish all configured mods to CurseForge")
-	fmt.Println("  update version  Update the game version and publish all configured mods to CurseForge")
-	fmt.Println()
-	fmt.Println("Options for 'publish':")
-	fmt.Println("  --build         Build each mod jar before publishing")
-	fmt.Println("                  Uses 'just build' if available, otherwise './gradlew build'")
+	fmt.Fprintln(os.Stderr, "Usage: mod-manager <command> [options]")
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Commands:")
+	fmt.Fprintln(os.Stderr, "  publish         Publish all configured mods to CurseForge")
+	fmt.Fprintln(os.Stderr, "  update version  Update the game version and publish all configured mods to CurseForge")
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Options for 'publish':")
+	fmt.Fprintln(os.Stderr, "  --build         Build each mod jar before publishing")
+	fmt.Fprintln(os.Stderr, "                  Uses 'just build' if available, otherwise './gradlew build'")
 }

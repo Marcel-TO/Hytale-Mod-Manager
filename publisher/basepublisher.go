@@ -6,7 +6,7 @@ import (
 )
 
 type BasePublisher struct {
-	Logger logger.Logger
+	Logger *logger.Logger
 	url    string
 	config *config.Config
 }
