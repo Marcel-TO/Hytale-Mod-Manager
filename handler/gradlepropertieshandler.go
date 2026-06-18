@@ -14,13 +14,13 @@ import (
 
 // ReadGradleProperties reads a gradle.properties file and returns mod metadata.
 // It delegates parsing to ReadRawModProperties.
-func ReadGradleProperties(filePath string) (config.CurseForgeModMetadata, error) {
+func ReadGradleProperties(filePath string, releaseType string) (config.CurseForgeModMetadata, error) {
 	modName, version, hytaleVersion, err := ReadRawModProperties(filePath)
 	if err != nil {
 		return config.CurseForgeModMetadata{}, err
 	}
 	displayName := fmt.Sprintf("%s-%s+%s", modName, version, hytaleVersion)
-	return config.NewCurseForgeModMetadata(displayName), nil
+	return config.NewCurseForgeModMetadata(displayName, releaseType), nil
 }
 
 // UpdateGradleProperties replaces the hytale_version value in a gradle.properties file.

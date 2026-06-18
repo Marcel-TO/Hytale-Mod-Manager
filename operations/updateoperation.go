@@ -14,7 +14,7 @@ import (
 )
 
 func RunUpdate(log *logger.Logger, args config.UpdateArgumentConfig, cfg *config.Config) error {
-	for _, mod := range cfg.CurseForge.Mods {
+	for _, mod := range cfg.Mods {
 		log.Info(fmt.Sprintf("Processing mod [%s]...", mod.Name))
 
 		// Update the game version and build the mods
@@ -37,17 +37,17 @@ func RunUpdate(log *logger.Logger, args config.UpdateArgumentConfig, cfg *config
 		}
 	}
 
-	// Publish the mods to CurseForge after updating the game version and building
+	// Publish the mods to all configured platforms after updating the game version and building
 	if args.IsPublish {
-		log.Info("Publishing to CurseForge...")
-		log.Info(fmt.Sprintf("Found %d mods to publish to CurseForge", len(cfg.CurseForge.Mods)))
-		curseForgePublisher := publisher.NewCurseForgePublisher(log, cfg)
-		curseForgePublisher.Publish()
+		log.Info("Publishing mods...")
+		log.Info(fmt.Sprintf("Found %d mods to publish", len(cfg.Mods)))
+		curseForgePublisher := publisher.NewCurseForgePublisher(log)
+		curseForgePublisher.Publish(cfg.Mods)
 	}
 	return nil
 }
 
-func updateGameVersion(log *logger.Logger, mod config.CurseForgeMod, newVersion string) error {
+func updateGameVersion(log *logger.Logger, mod config.ModConfig, newVersion string) error {
 	// Update the game version and build the mod
 	log.Info(fmt.Sprintf("Updating game version to %s and building mod [%s]...", newVersion, mod.Name))
 	if err := builder.UpdateGameVersion(mod.RepoLocation, newVersion, log); err != nil {
@@ -58,7 +58,7 @@ func updateGameVersion(log *logger.Logger, mod config.CurseForgeMod, newVersion 
 	return nil
 }
 
-func copyBuiltJarsToHytale(log *logger.Logger, mod config.CurseForgeMod) error {
+func copyBuiltJarsToHytale(log *logger.Logger, mod config.ModConfig) error {
 	log.Info(fmt.Sprintf("Copying built JARs for mod [%s] to Hytale mods directory...", mod.Name))
 
 	hytalePath := os.Getenv("HYTALE_PATH")
@@ -73,7 +73,7 @@ func copyBuiltJarsToHytale(log *logger.Logger, mod config.CurseForgeMod) error {
 	return nil
 }
 
-func commitChangesToGit(log *logger.Logger, mod config.CurseForgeMod) error {
+func commitChangesToGit(log *logger.Logger, mod config.ModConfig) error {
 	if err := git.CommitToGitHandler(mod.RepoLocation); err != nil {
 		return fmt.Errorf("failed to commit changes for mod [%s]: %w", mod.Name, err)
 	}

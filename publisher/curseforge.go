@@ -20,52 +20,56 @@ type CurseForgePublisher struct {
 	BasePublisher
 }
 
-func NewCurseForgePublisher(log *logger.Logger, cfg *config.Config) *CurseForgePublisher {
+func NewCurseForgePublisher(log *logger.Logger) *CurseForgePublisher {
 	return &CurseForgePublisher{
 		BasePublisher: BasePublisher{
 			Logger: log,
 			url:    "https://legacy.curseforge.com/api/projects/",
-			config: cfg,
 		},
 	}
 }
 
-func (p *CurseForgePublisher) Publish() {
+func (p *CurseForgePublisher) Publish(mods []config.ModConfig) {
 	cache := (&config.UploadCache{}).GetUploadCache(p.Logger)
 
-	for _, mod := range p.config.CurseForge.Mods {
-		metadata, err := handler.ReadGradleProperties(filepath.Join(mod.RepoLocation, "gradle.properties"))
+	for _, mod := range mods {
+		if mod.Platforms.CurseForge == nil {
+			continue
+		}
+		target := mod.Platforms.CurseForge
+
+		metadata, err := handler.ReadGradleProperties(filepath.Join(mod.RepoLocation, "gradle.properties"), mod.ReleaseType)
 		if err != nil {
 			p.Logger.Error(fmt.Sprintf("Failed to read gradle.properties for mod [%s]: %v", mod.Name, err))
 			continue
 		}
 
-		if cache.IsVersionCached(mod.ProjectID, metadata.DisplayName) {
+		if cache.IsVersionCached(target.ProjectID, metadata.DisplayName) {
 			p.Logger.Info(fmt.Sprintf("Mod [%s] version [%s] already uploaded, skipping", mod.Name, metadata.DisplayName))
 			continue
 		}
 
 		p.Logger.Info(fmt.Sprintf("Publishing mod [%s] version [%s] to CurseForge...", mod.Name, metadata.DisplayName))
-		err = p.PublishMod(mod, metadata)
+		err = p.PublishMod(target.ProjectID, mod.RepoLocation, metadata)
 		if err != nil {
 			p.Logger.Error(fmt.Sprintf("Failed to publish mod [%s] version [%s]: %v", mod.Name, metadata.DisplayName, err))
 		} else {
-			cache.AddCacheEntry(mod.ProjectID, metadata.DisplayName)
+			cache.AddCacheEntry(target.ProjectID, metadata.DisplayName)
 			cache.SaveUploadCache(p.Logger)
 			p.Logger.Info(fmt.Sprintf("Successfully published mod [%s] version [%s] to CurseForge!", mod.Name, metadata.DisplayName))
 		}
 	}
 }
 
-func (p *CurseForgePublisher) PublishMod(mod config.CurseForgeMod, metadata config.CurseForgeModMetadata) error {
-	url := p.url + fmt.Sprintf("%d/upload-file", mod.ProjectID)
+func (p *CurseForgePublisher) PublishMod(projectID int, repoLocation string, metadata config.CurseForgeModMetadata) error {
+	url := p.url + fmt.Sprintf("%d/upload-file", projectID)
 
 	apiToken := os.Getenv("CURSEFORGE_API_TOKEN")
 	if apiToken == "" {
 		return fmt.Errorf("CURSEFORGE_API_TOKEN is not set")
 	}
 
-	payload, contentType, err := preparePayload(metadata, mod.RepoLocation)
+	payload, contentType, err := preparePayload(metadata, repoLocation)
 	if err != nil {
 		return fmt.Errorf("error while preparing the payload: %w", err)
 	}

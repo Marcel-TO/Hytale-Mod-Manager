@@ -9,6 +9,10 @@ type UpdateArgumentConfig struct {
 	Committing  bool
 }
 
+type PublishArgumentConfig struct {
+	DoBuild bool
+}
+
 func ParseUpdateArguments(cmd *flag.FlagSet, args []string) UpdateArgumentConfig {
 	gameVersion := cmd.String("version", "", "The new game version to set in gradle.properties before building and publishing")
 	isCopying := cmd.Bool("copy", true, "Indicates whether to copy the built JARs to the Hytale mods directory after building")
@@ -22,5 +26,14 @@ func ParseUpdateArguments(cmd *flag.FlagSet, args []string) UpdateArgumentConfig
 		IsPublish:   *isPublish,
 		IsCopying:   *isCopying,
 		Committing:  *committing,
+	}
+}
+
+func ParsePublishArguments(cmd *flag.FlagSet, args []string) PublishArgumentConfig {
+	doBuild := cmd.Bool("build", false, "Build each mod jar before publishing")
+	cmd.Parse(args)
+
+	return PublishArgumentConfig{
+		DoBuild: *doBuild,
 	}
 }

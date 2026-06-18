@@ -1,10 +1,13 @@
-curseforge:
-  mods:
-    - projectId: 123456
-      name: "My Mod"
-      repoLocation: "local/path/to/your/mod/repository"
-      releaseType: "pre-release"
-    - projectId: 789012
-      name: "Another Mod"
-      repoLocation: "local/path/to/your/other/mod/repository"
-      releaseType: "pre-release"
+mods:
+  - name: "My Mod"
+    repoLocation: "local/path/to/your/mod/repository"
+    releaseType: "pre-release"
+    platforms:
+      curseforge:
+        projectId: 123456
+  - name: "Another Mod"
+    repoLocation: "local/path/to/your/other/mod/repository"
+    releaseType: "pre-release"
+    platforms:
+      curseforge:
+        projectId: 789012

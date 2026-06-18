@@ -13,18 +13,26 @@ import (
 const cacheFilePath = "cache/upload_cache.yaml"
 
 type Config struct {
-	CurseForge CurseForgeConfig `yaml:"curseforge"`
+	Mods []ModConfig `yaml:"mods"`
 }
 
-type CurseForgeConfig struct {
-	Mods []CurseForgeMod `yaml:"mods"`
+// ModConfig holds mod identity and build information, shared across all platforms.
+type ModConfig struct {
+	Name         string          `yaml:"name"`
+	RepoLocation string          `yaml:"repoLocation"`
+	ReleaseType  string          `yaml:"releaseType"`
+	Platforms    PlatformTargets `yaml:"platforms"`
 }
 
-type CurseForgeMod struct {
-	Name         string `yaml:"name"`
-	ProjectID    int    `yaml:"projectId"`
-	RepoLocation string `yaml:"repoLocation"`
-	ReleaseType  string `yaml:"releaseType"`
+// PlatformTargets holds optional publishing configuration for each supported platform.
+// A nil pointer means the mod should not be published to that platform.
+type PlatformTargets struct {
+	CurseForge *CurseForgeTarget `yaml:"curseforge,omitempty"`
+}
+
+// CurseForgeTarget holds CurseForge-specific publishing configuration.
+type CurseForgeTarget struct {
+	ProjectID int `yaml:"projectId"`
 }
 
 type CurseForgeModMetadata struct {
@@ -34,19 +42,20 @@ type CurseForgeModMetadata struct {
 	ReleaseType   string `json:"releaseType"`
 }
 
+// UploadCache tracks which mod versions have already been uploaded to each platform.
 type UploadCache struct {
-	CurseForgeUploadCache []CurseForgeUploadCache `yaml:"curseforgeUploadCache"`
+	CurseForge []CurseForgeUploadCacheEntry `yaml:"curseforge,omitempty"`
 }
 
-type CurseForgeUploadCache struct {
+type CurseForgeUploadCacheEntry struct {
 	ProjectID int    `yaml:"projectId"`
 	Version   string `yaml:"version"`
 }
 
-func NewCurseForgeModMetadata(displayName string) CurseForgeModMetadata {
+func NewCurseForgeModMetadata(displayName, releaseType string) CurseForgeModMetadata {
 	return CurseForgeModMetadata{
 		DisplayName:   displayName,
-		ReleaseType:   "release",
+		ReleaseType:   releaseType,
 		Changelog:     "",
 		ChangelogType: "markdown",
 	}
@@ -82,7 +91,7 @@ func (cache *UploadCache) SaveUploadCache(log *logger.Logger) {
 }
 
 func (cache *UploadCache) IsVersionCached(projectID int, version string) bool {
-	for _, entry := range cache.CurseForgeUploadCache {
+	for _, entry := range cache.CurseForge {
 		if entry.ProjectID == projectID && entry.Version == version {
 			return true
 		}
@@ -95,15 +104,14 @@ func (cache *UploadCache) AddCacheEntry(projectID int, version string) {
 		return
 	}
 
-	// Overwrite existing entry for the same project ID if it exists
-	for i, entry := range cache.CurseForgeUploadCache {
+	for i, entry := range cache.CurseForge {
 		if entry.ProjectID == projectID {
-			cache.CurseForgeUploadCache = append(cache.CurseForgeUploadCache[:i], cache.CurseForgeUploadCache[i+1:]...)
+			cache.CurseForge = append(cache.CurseForge[:i], cache.CurseForge[i+1:]...)
 			break
 		}
 	}
 
-	cache.CurseForgeUploadCache = append(cache.CurseForgeUploadCache, CurseForgeUploadCache{
+	cache.CurseForge = append(cache.CurseForge, CurseForgeUploadCacheEntry{
 		ProjectID: projectID,
 		Version:   version,
 	})
