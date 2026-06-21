@@ -35,15 +35,15 @@ func RunUpdate(log *logger.Logger, args config.UpdateArgumentConfig, cfg *config
 				return err
 			}
 		}
+
+		// Publish the mod to all configured platforms after updating the game version and building
+		if args.IsPublish {
+			log.Info(fmt.Sprintf("Publishing mod [%s]...", mod.Name))
+			curseForgePublisher := publisher.NewCurseForgePublisher(log)
+			curseForgePublisher.Publish([]config.ModConfig{mod})
+		}
 	}
 
-	// Publish the mods to all configured platforms after updating the game version and building
-	if args.IsPublish {
-		log.Info("Publishing mods...")
-		log.Info(fmt.Sprintf("Found %d mods to publish", len(cfg.Mods)))
-		curseForgePublisher := publisher.NewCurseForgePublisher(log)
-		curseForgePublisher.Publish(cfg.Mods)
-	}
 	return nil
 }
 

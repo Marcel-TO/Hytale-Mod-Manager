@@ -13,5 +13,5 @@ update version copy="false" commit="false" publish="false":
     go run main.go update --version {{version}} --copy={{copy}} --commit={{commit}} --publish={{publish}}
 
 # Updates the mods to specific version and publishes them
-update-and-publish version copy="false" commit="false" publish="false":
+update-and-publish version copy="false" commit="false":
     go run main.go update --version {{version}} --copy={{copy}} --commit={{commit}} --publish=true
