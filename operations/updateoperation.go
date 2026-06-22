@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"marcel-to/hytale/mod-manager/builder"
 	"marcel-to/hytale/mod-manager/config"
@@ -14,25 +15,36 @@ import (
 )
 
 func RunUpdate(log *logger.Logger, args config.UpdateArgumentConfig, cfg *config.Config) error {
+	var failedMods []string
+
 	for _, mod := range cfg.Mods {
 		log.Info(fmt.Sprintf("Processing mod [%s]...", mod.Name))
 
 		// Update the game version and build the mods
 		if err := updateGameVersion(log, mod, args.GameVersion); err != nil {
-			return err
+			log.Error(err.Error())
+			log.Warning(fmt.Sprintf("Skipping mod [%s] due to error. Continuing with next mod...", mod.Name))
+			failedMods = append(failedMods, mod.Name)
+			continue
 		}
 
 		// Copy the built JARs to the Hytale mods directory
 		if args.IsCopying {
 			if err := copyBuiltJarsToHytale(log, mod); err != nil {
-				return err
+				log.Error(err.Error())
+				log.Warning(fmt.Sprintf("Skipping remaining steps for mod [%s] due to error. Continuing with next mod...", mod.Name))
+				failedMods = append(failedMods, mod.Name)
+				continue
 			}
 		}
 
 		// Commit the changes to git
 		if args.Committing {
 			if err := commitChangesToGit(log, mod); err != nil {
-				return err
+				log.Error(err.Error())
+				log.Warning(fmt.Sprintf("Skipping remaining steps for mod [%s] due to error. Continuing with next mod...", mod.Name))
+				failedMods = append(failedMods, mod.Name)
+				continue
 			}
 		}
 
@@ -42,6 +54,10 @@ func RunUpdate(log *logger.Logger, args config.UpdateArgumentConfig, cfg *config
 			curseForgePublisher := publisher.NewCurseForgePublisher(log)
 			curseForgePublisher.Publish([]config.ModConfig{mod})
 		}
+	}
+
+	if len(failedMods) > 0 {
+		return fmt.Errorf("the following mods encountered errors and were skipped: %s", strings.Join(failedMods, ", "))
 	}
 
 	return nil
