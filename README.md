@@ -9,14 +9,20 @@ This repository contains a small tool that uploads selected mods to newest versi
 It can be configured with a YAML file named `publish-config.yaml`. The configuration file should be placed in the same directory as the executable. The configuration file should contain the following fields:
 
 ```yaml
-curseforge:
-  mods:
-- projectId: 123456
-    name: "My Mod"
+mods:
+  - name: "My Mod"
     repoLocation: "local/path/to/your/mod/repository"
-- projectId: 789012
-    name: "Another Mod"
+    releaseType: "pre-release"
+    platforms:
+      curseforge:
+        projectId: 123456
+  - name: "Another Mod"
     repoLocation: "local/path/to/your/other/mod/repository"
+    releaseType: "pre-release"
+    platforms:
+      curseforge:
+        projectId: 789012
+
 ```
 
 ## Environment Variables
