@@ -6,7 +6,7 @@ This repository contains a small tool that uploads selected mods to newest versi
 - A CurseForge account and API key
 
 ## Configuration
-It can be configured with a YAML file named `publish-config.yaml`. The configuration file should be placed in the same directory as the executable. The configuration file should contain the following fields:
+By default, the tool reads `publish-config.yaml` from the current working directory. Use `--config <file>` after the command to select another YAML file. The configuration file should contain the following fields:
 
 ```yaml
 mods:
@@ -29,9 +29,43 @@ mods:
 The following environment variables are used for authentication:
 - `CURSEFORGE_API_KEY`: Your CurseForge API key.
 
-> **Note**: Make sure to keep your API key secure and do not share it publicly. Put it in a `.env` file or set it in your system environment variables.
+The tool reads `.env` from the current working directory by default. This file is optional if the variables are already set in the environment. Use `--env <file>` after the command to select another environment file. A file selected with `--env` must exist and be valid. Existing environment variables take precedence over values in the file.
+
+Keep your API key secure and do not share it publicly. Files named `.env` or `.env.<name>` are ignored by Git, except `.env.example`. If you use another name, make sure Git ignores that file too.
 
 ## Usage
+Both `publish` and `update` accept `--config` and `--env`. The flags are independent, and relative paths are resolved from the current working directory. Quote paths that contain spaces.
+
+```shell
+go run main.go publish --config publish-config.alternate.yaml --env .env.alternate
+go run main.go update --version 1.2.3 --copy=false --commit=false --publish=false --config publish-config.alternate.yaml --env .env.alternate
+```
+
+Use the separate `publish-custom` recipe to select a configuration file and an optional environment file:
+
+```shell
+just publish-custom publish-config.alternate.yaml
+just publish-custom "folder with spaces\publish-config.yaml" "folder with spaces\.env.alternate"
+```
+
+To update and publish with custom files, use `update-and-publish-custom`:
+
+```shell
+just update-and-publish-custom 1.2.3 publish-config.alternate.yaml
+just update-and-publish-custom 1.2.3 "folder with spaces\publish-config.yaml" "folder with spaces\.env.alternate" false false
+```
+
+The environment file defaults to `.env` for both custom recipes and must exist. For `update-and-publish-custom`, copying and committing default to `true`. The last two arguments can override these defaults.
+
+The original recipes forward any extra flags to the Go command. For `just update` and `just update-and-publish`, list every positional value before the flags:
+
+```shell
+just publish --config publish-config.alternate.yaml
+just update 1.2.3 false false false --config publish-config.alternate.yaml --env .env.alternate
+```
+
+Run `go run main.go publish --help` or `go run main.go update --help` to see the available options.
+
 The tool expects the mod repositories to be structured in a specific way, with a `gradle.properties` file containing the mod metadata and a built JAR file located in the `build/libs` directory. The following fields are expected in the `gradle.properties` file:
 
 - `mod_name`: The name of the mod.
